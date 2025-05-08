@@ -18,4 +18,6 @@ jwt:
 logging:
   level:
     org.springframework.r2dbc: DEBUG
+    org.springframework.security: DEBUG
     com.bcp.security: DEBUG
+    io.r2dbc.mysql: DEBUG
