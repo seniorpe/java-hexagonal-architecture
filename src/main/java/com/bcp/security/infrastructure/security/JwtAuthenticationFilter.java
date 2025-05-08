@@ -1,6 +1,7 @@
 package com.bcp.security.infrastructure.security;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
@@ -10,6 +11,7 @@ import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Mono;
 
+@Slf4j
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter implements WebFilter {
 
@@ -20,10 +22,24 @@ public class JwtAuthenticationFilter implements WebFilter {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
         String token = resolveToken(exchange.getRequest());
-        if (StringUtils.hasText(token) && tokenProvider.validateToken(token)) {
-            Authentication authentication = tokenProvider.getAuthentication(token);
-            return chain.filter(exchange)
-                    .contextWrite(ReactiveSecurityContextHolder.withAuthentication(authentication));
+        String path = exchange.getRequest().getPath().value();
+
+        log.debug("Processing request to path: {}", path);
+
+        if (StringUtils.hasText(token)) {
+            log.debug("JWT token found in request");
+            if (tokenProvider.validateToken(token)) {
+                log.debug("JWT token is valid");
+                Authentication authentication = tokenProvider.getAuthentication(token);
+                log.info("Setting authentication in SecurityContext for user: {}",
+                        authentication.getName());
+                return chain.filter(exchange)
+                        .contextWrite(ReactiveSecurityContextHolder.withAuthentication(authentication));
+            } else {
+                log.warn("Invalid JWT token");
+            }
+        } else {
+            log.debug("No JWT token found in request");
         }
         return chain.filter(exchange);
     }
