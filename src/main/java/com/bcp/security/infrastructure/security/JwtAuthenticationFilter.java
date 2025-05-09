@@ -11,6 +11,9 @@ import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Mono;
 
+import java.util.Arrays;
+import java.util.List;
+
 @Slf4j
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter implements WebFilter {
@@ -19,12 +22,27 @@ public class JwtAuthenticationFilter implements WebFilter {
     private static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
 
+    // Lista de rutas públicas que no requieren autenticación
+    private static final List<String> PUBLIC_PATHS = Arrays.asList(
+            "/api/auth/login",
+            "/api/auth/register",
+            "/api/health"
+    );
+
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
-        String token = resolveToken(exchange.getRequest());
         String path = exchange.getRequest().getPath().value();
+        String method = exchange.getRequest().getMethod().name();
 
-        log.debug("Processing request to path: {}", path);
+        log.debug("Processing request: {} {}", method, path);
+
+        // Si la ruta es pública, no intentamos autenticar
+        if (isPublicPath(path)) {
+            log.debug("Public path detected, skipping authentication: {}", path);
+            return chain.filter(exchange);
+        }
+
+        String token = resolveToken(exchange.getRequest());
 
         if (StringUtils.hasText(token)) {
             log.debug("JWT token found in request");
@@ -50,5 +68,9 @@ public class JwtAuthenticationFilter implements WebFilter {
             return bearerToken.substring(7);
         }
         return null;
+    }
+
+    private boolean isPublicPath(String path) {
+        return PUBLIC_PATHS.stream().anyMatch(path::startsWith);
     }
 }

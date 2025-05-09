@@ -12,7 +12,7 @@ spring:
     port: 6379
     timeout: 2000
   cache:
-    type: redis
+    type: none
     redis:
       time-to-live: 3600000
       cache-null-values: false
@@ -29,6 +29,8 @@ logging:
     root: INFO
     org.springframework.r2dbc: DEBUG
     org.springframework.security: DEBUG
+    org.springframework.security.web: DEBUG
+    org.springframework.security.config: DEBUG
     org.springframework.data.redis: DEBUG
     com.bcp.security: DEBUG
     io.r2dbc.mysql: DEBUG
